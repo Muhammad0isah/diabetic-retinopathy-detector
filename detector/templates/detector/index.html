@@ -1,0 +1,295 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Diabetic Retinopathy Detection System</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 40px;
+      font-family: Arial, sans-serif;
+      background-image:url("{% static 'img/bg.jpg'%}");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      color: #000;
+    }
+
+    h1 {
+      text-align: center;
+      color: white;
+      text-shadow: 1px 1px 2px #000;
+    }
+
+    #result-section {
+      display: none;
+      margin-top: 20px;
+      border: 2px solid white;
+      padding: 20px;
+      border-radius: 10px;
+      background-color: rgba(255, 255, 255, 0.9);
+    }
+
+    .image-row {
+      display: flex;
+      gap: 30px;
+      margin-top: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .image-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .image-column img {
+      border-radius: 10px;
+      width: 300px;
+    }
+
+    #loading {
+      display: none;
+    }
+
+    .spinner {
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 10px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    #drop-zone {
+      border: 2px dashed #ccc;
+      border-radius: 10px;
+      padding: 30px;
+      text-align: center;
+      margin-bottom: 20px;
+      background-color: rgba(255, 255, 255, 0.85);
+    }
+
+    #drop-zone.dragover {
+      border-color: #3498db;
+      background-color: #eef8ff;
+    }
+
+    #id_image {
+      display: none;
+    }
+
+    #file-label {
+      display: inline-block;
+      padding: 8px 15px;
+      background-color: #3498db;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    #drop-instruction {
+      display: block;
+    }
+    .center-img {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+  .center-img #preview-img {
+        display: none;
+        width: 300px;
+        border-radius: 10px;
+        margin-top: 10px;
+      }
+    .center-btn {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;
+    }
+
+    .center-btn #diagnose-btn {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      display: none;
+      background-color: #2ecc71;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .probability-box {
+        margin-top: 30px;
+        padding: 20px;
+        border-radius: 10px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        max-width: 500px;
+    }
+
+    .probability-box h3 {
+        text-align: center;
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .probability-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .probability-table th,
+    .probability-table td {
+        padding: 10px;
+        border: 1px solid #ccc;
+        text-align: center;
+        font-size: 16px;
+    }
+
+    .probability-table th {
+        background-color: #e0e0e0;
+    }
+
+  </style>
+</head>
+<body>
+
+<h1>Diabetic Retinopathy Detection System</h1>
+
+<form id="upload-form" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div id="drop-zone">
+    <div id="drop-instruction">
+      <p>Drag and drop an image here, or</p>
+      <label id="file-label" for="id_image">Choose retinal image</label>
+      <input type="file" name="image" required id="id_image" accept="image/*">
+    </div>
+    <div class="center-img"><img id="preview-img" src="#" alt="Preview"></div>
+
+  </div>
+  <div class="center-btn"><button type="submit" id="diagnose-btn">Diagnose</button></div>
+</form>
+
+<!-- Spinner -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p style="text-align: center; color: white;">Diagnosing...</p>
+</div>
+
+<div id="result-section">
+  <hr>
+  <h2 style="text-align: center;">Diagnosis Result</h2>
+  <p><strong>Diagnostic Result: </strong> {{ prediction }}</p>
+
+  <div class="image-row">
+    <div class="image-column">
+      <h3>Original Image:</h3>
+      <img src="/media/{{ original }}" alt="Original Image">
+    </div>
+    <div class="image-column">
+      <h3>Preprocessed Image:</h3>
+      <img src="/media/{{ preprocessed }}" alt="Preprocessed Image">
+    </div>
+    <div class="image-column">
+      <h3>Model Focused Area (Grad-CAM):</h3>
+      <img src="/media/{{ gradcam }}" alt="Grad-CAM Image">
+    </div>
+        {% if probabilities %}
+    <div class="probability-box">
+        <h3>Prediction Confidence</h3>
+        <table class="probability-table">
+            <thead>
+                <tr><th>Class</th><th>Confidence</th></tr>
+            </thead>
+            <tbody>
+            {% for label, prob in probabilities.items %}
+                <tr>
+                    <td>{{ label }}</td>
+                    <td>{{ prob }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+  </div>
+</div>
+<script>
+  const form = document.getElementById('upload-form');
+  const loading = document.getElementById('loading');
+  const result = document.getElementById('result-section');
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('id_image');
+  const fileLabel = document.getElementById('file-label');
+  const dropInstruction = document.getElementById('drop-instruction');
+  const previewImg = document.getElementById('preview-img');
+  const diagnoseBtn = document.getElementById('diagnose-btn');
+  form.addEventListener('submit', function () {
+    loading.style.display = 'block';
+    result.style.display = 'none';
+    diagnoseBtn.style.display = 'none';
+    dropInstruction.style.display = 'block';
+    previewImg.style.display = 'none';
+  });
+
+  window.addEventListener('load', function () {
+    {% if prediction %}
+      loading.style.display = 'none';
+      result.style.display = 'block';
+    {% endif %}
+  });
+
+  function handleFile(file) {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        previewImg.src = e.target.result;
+        previewImg.style.display = 'block';
+        dropInstruction.style.display = 'none';
+        diagnoseBtn.style.display = 'inline-block';
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length > 0) {
+      handleFile(fileInput.files[0]);
+    }
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      fileInput.files = files;
+      handleFile(files[0]);
+    }
+  });
+</script>
+
+</body>
+</html>
