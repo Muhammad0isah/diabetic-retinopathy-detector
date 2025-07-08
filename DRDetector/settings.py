@@ -26,7 +26,10 @@ SECRET_KEY = "django-insecure-2-xh^_c4od&51b7hj+ew)z_)t*xr(+2do$&0eczp=^l!cqc#0j
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost',
+    '127.0.0.1',
+    '.onrender.com',
+    'diabetic-retinopathy-detector-c1br.onrender.com']
 
 
 # Application definition
