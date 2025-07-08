@@ -4,6 +4,7 @@ services:
     env: python
     region: oregon
     plan: free
+    runtime: python-3.11.9
     buildCommand: |
       pip install --upgrade pip setuptools wheel
       pip install -r requirements.txt
@@ -17,3 +18,5 @@ services:
         generateValue: true
       - key: DJANGO_SETTINGS_MODULE
         value: "DRDetector.settings"
+      - key: PYTHON_VERSION
+        value: "3.11.9"
