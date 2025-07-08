@@ -2,10 +2,18 @@ services:
   - type: web
     name: diabetic-retinopathy-detector
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn DRDetector.wsgi:application --host 0.0.0.0 --port $PORT
+    region: oregon
+    plan: free
+    buildCommand: |
+      pip install --upgrade pip setuptools wheel
+      pip install -r requirements.txt
+    startCommand: gunicorn DRDetector.wsgi:application --host 0.0.0.0 --port $PORT --workers 1 --timeout 120
     envVars:
       - key: DEBUG
-        value: False
+        value: "False"
       - key: ALLOWED_HOSTS
-        value: .onrender.com
+        value: ".onrender.com"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DJANGO_SETTINGS_MODULE
+        value: "DRDetector.settings"
