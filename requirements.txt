@@ -1,8 +1,8 @@
-Django==4.2.7
-opencv-python-headless==4.8.1.78
-numpy==1.24.3
-tensorflow==2.13.0
-Pillow==10.0.1
-gunicorn==21.2.0
-whitenoise==6.6.0
-python-decouple==3.8
+Django
+opencv-python-headless
+numpy
+tensorflow
+Pillow
+gunicorn
+whitenoise
+python-decouple
