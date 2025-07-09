@@ -22,6 +22,29 @@
       text-shadow: 1px 1px 2px #000;
     }
 
+    /* Error message styling */
+    .error-message {
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 15px;
+      border: 1px solid #f5c6cb;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .success-message {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 15px;
+      border: 1px solid #c3e6cb;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-weight: bold;
+      text-align: center;
+    }
+
     #result-section {
       display: none;
       margin-top: 20px;
@@ -106,12 +129,12 @@
       align-items: center;
     }
 
-  .center-img #preview-img {
-        display: none;
-        width: 300px;
-        border-radius: 10px;
-        margin-top: 10px;
-      }
+    .center-img #preview-img {
+      display: none;
+      width: 300px;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
     .center-btn {
       display: flex;
       justify-content: center;
@@ -130,37 +153,57 @@
       border-radius: 5px;
       cursor: pointer;
     }
+
     .probability-box {
-        margin-top: 30px;
-        padding: 20px;
-        border-radius: 10px;
-        background-color: #f9f9f9;
-        border: 1px solid #ddd;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        max-width: 500px;
+      margin-top: 30px;
+      padding: 20px;
+      border-radius: 10px;
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      max-width: 500px;
     }
 
     .probability-box h3 {
-        text-align: center;
-        margin-bottom: 15px;
-        color: #333;
+      text-align: center;
+      margin-bottom: 15px;
+      color: #333;
     }
 
     .probability-table {
-        width: 100%;
-        border-collapse: collapse;
+      width: 100%;
+      border-collapse: collapse;
     }
 
     .probability-table th,
     .probability-table td {
-        padding: 10px;
-        border: 1px solid #ccc;
-        text-align: center;
-        font-size: 16px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+      font-size: 16px;
     }
 
     .probability-table th {
-        background-color: #e0e0e0;
+      background-color: #e0e0e0;
+    }
+
+    /* Instructions box */
+    .instructions {
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+    }
+
+    .instructions h3 {
+      color: #333;
+      margin-top: 0;
+    }
+
+    .instructions ul {
+      text-align: left;
+      margin: 10px 0;
     }
 
   </style>
@@ -169,16 +212,53 @@
 
 <h1>Diabetic Retinopathy Detection System</h1>
 
+<!-- Instructions -->
+<div class="instructions">
+  <h3>📋 Instructions:</h3>
+  <ul>
+    <li><strong>Upload only retinal fundus images</strong> - taken during an eye examination by an ophthalmologist</li>
+    <li>Accepted formats: JPG, PNG, GIF (Maximum file size: 10MB)</li>
+    <li>Ensure the image shows the back of the eye (retina) with visible blood vessels and optic disc</li>
+    <li>For best results, use high-quality fundus photographs with good lighting and focus</li>
+    <li><strong>Important:</strong> This system is designed specifically for medical fundus images only</li>
+  </ul>
+</div>
+
+<!-- Error Messages -->
+{% if form.errors %}
+  {% for field, errors in form.errors.items %}
+    {% for error in errors %}
+      <div class="error-message">
+        ❌ {{ error }}
+      </div>
+    {% endfor %}
+  {% endfor %}
+{% endif %}
+
+{% if form.non_field_errors %}
+  {% for error in form.non_field_errors %}
+    <div class="error-message">
+      ❌ {{ error }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+<!-- Success Message -->
+{% if success %}
+  <div class="success-message">
+    ✅ Image successfully processed and diagnosed!
+  </div>
+{% endif %}
+
 <form id="upload-form" method="post" enctype="multipart/form-data">
   {% csrf_token %}
   <div id="drop-zone">
     <div id="drop-instruction">
-      <p>Drag and drop an image here, or</p>
+      <p>Drag and drop a <strong>retinal fundus image</strong> here, or</p>
       <label id="file-label" for="id_image">Choose retinal image</label>
       <input type="file" name="image" required id="id_image" accept="image/*">
     </div>
     <div class="center-img"><img id="preview-img" src="#" alt="Preview"></div>
-
   </div>
   <div class="center-btn"><button type="submit" id="diagnose-btn">Diagnose</button></div>
 </form>
@@ -186,13 +266,19 @@
 <!-- Spinner -->
 <div id="loading">
   <div class="spinner"></div>
-  <p style="text-align: center; color: white;">Diagnosing...</p>
+  <p style="text-align: center; color: white;">🔍 Analyzing retinal image...</p>
 </div>
 
-<div id="result-section">
+<!-- Results Section -->
+{% if prediction %}
+<div id="result-section" style="display: block;">
   <hr>
-  <h2 style="text-align: center;">Diagnosis Result</h2>
-  <p><strong>Diagnostic Result: </strong> {{ prediction }}</p>
+  <h2 style="text-align: center;">🏥 Diagnosis Result</h2>
+  <p style="text-align: center; font-size: 18px;"><strong>Diagnostic Result: </strong> 
+    <span style="color: {% if prediction == 'No DR' %}green{% else %}red{% endif %}; font-weight: bold;">
+      {{ prediction }}
+    </span>
+  </p>
 
   <div class="image-row">
     <div class="image-column">
@@ -207,26 +293,38 @@
       <h3>Model Focused Area (Grad-CAM):</h3>
       <img src="/media/{{ gradcam }}" alt="Grad-CAM Image">
     </div>
-        {% if probabilities %}
-    <div class="probability-box">
-        <h3>Prediction Confidence</h3>
-        <table class="probability-table">
-            <thead>
-                <tr><th>Class</th><th>Confidence</th></tr>
-            </thead>
-            <tbody>
-            {% for label, prob in probabilities.items %}
-                <tr>
-                    <td>{{ label }}</td>
-                    <td>{{ prob }}</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
+  </div>
+
+  {% if probabilities %}
+  <div class="probability-box" style="margin: 30px auto;">
+    <h3>Prediction Confidence</h3>
+    <table class="probability-table">
+      <thead>
+        <tr><th>Class</th><th>Confidence</th></tr>
+      </thead>
+      <tbody>
+      {% for label, prob in probabilities.items %}
+        <tr style="{% if label == prediction %}background-color: #e8f5e8; font-weight: bold;{% endif %}">
+          <td>{{ label }}</td>
+          <td>{{ prob }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Medical Disclaimer -->
+  <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 10px; margin-top: 20px;">
+    <h4 style="color: #856404; margin-top: 0;">⚕️ Medical Disclaimer:</h4>
+    <p style="color: #856404; margin-bottom: 0;">
+      This AI system is for screening purposes only. Always consult with a qualified ophthalmologist 
+      or healthcare professional for proper medical diagnosis and treatment decisions.
+    </p>
   </div>
 </div>
+{% endif %}
+
 <script>
   const form = document.getElementById('upload-form');
   const loading = document.getElementById('loading');
@@ -237,19 +335,17 @@
   const dropInstruction = document.getElementById('drop-instruction');
   const previewImg = document.getElementById('preview-img');
   const diagnoseBtn = document.getElementById('diagnose-btn');
+
   form.addEventListener('submit', function () {
     loading.style.display = 'block';
     result.style.display = 'none';
     diagnoseBtn.style.display = 'none';
     dropInstruction.style.display = 'block';
     previewImg.style.display = 'none';
-  });
-
-  window.addEventListener('load', function () {
-    {% if prediction %}
-      loading.style.display = 'none';
-      result.style.display = 'block';
-    {% endif %}
+    
+    // Hide any error messages
+    const errorMessages = document.querySelectorAll('.error-message');
+    errorMessages.forEach(msg => msg.style.display = 'none');
   });
 
   function handleFile(file) {
@@ -288,6 +384,11 @@
       fileInput.files = files;
       handleFile(files[0]);
     }
+  });
+
+  // Hide loading spinner if page loads with errors
+  window.addEventListener('load', function () {
+    loading.style.display = 'none';
   });
 </script>
 
